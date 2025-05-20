@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+         body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .product-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .product {
+            border: 1px solid #ddd;
+            padding: 10px;
+            width: 250px;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+
+    </style>
+    <title>Product Scraper</title>
+    
+</head>
+<body>
+    <h1>Product List</h1>
+    <div class="product-container" id="productContainer"></div>
+
+    <script>
+         async function fetchProductData() {
+            const response = await fetch('/product');
+            const data = await response.json();
+        //}
+   
+
+                // Function to display products
+        //function displayProducts() {
+            const container = document.getElementById("productContainer");
+
+            data.forEach(product => {
+                const productDiv = document.createElement("div");
+                productDiv.classList.add("product");
+
+                const img = document.createElement("img");
+                img.src = product.image;
+                img.alt = "Product Image";
+
+                const price = document.createElement("p");
+                price.textContent = `Price: $${product.price}`;
+
+                productDiv.appendChild(img);
+                productDiv.appendChild(price);
+                container.appendChild(productDiv);
+            });
+        }
+
+        // Load products on page load
+        window.onload = fetchProductData;
+    </script>
+</body>
+
+</html>
