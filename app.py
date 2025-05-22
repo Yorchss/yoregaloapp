@@ -1,55 +1,44 @@
-from flask import Flask, jsonify, render_template
-import requests
-from bs4 import BeautifulSoup
-import json
+from packaging.version import Version
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+import time
 
-app = Flask(__name__, static_folder="static")
-
-# Target URL
-URL = "https://www.enviaflores.com/florerias-nuevo-leon/monterrey?cs=todas-las-flores"
-
-# Headers to mimic a real browser request
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
-
+url=""
 def scrape_products(url):
-    response = requests.get(url, headers=HEADERS)
-    
-    if response.status_code != 200:
-        print("Error fetching the page")
-        return []
+    options = uc.ChromeOptions()
+    options.headless = True
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("window-size=1920,1080")
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    driver = uc.Chrome(options=options)
+    driver.get(url)
+
+    # Wait for JS to load
+    time.sleep(5)
+
+    product_elements = driver.find_elements(By.CLASS_NAME, "product")
+    print(f"Found {len(product_elements)} product elements")
 
     products = []
 
-    # Modify these selectors based on actual HTML structure
-    product_containers = soup.find_all(class_="product-container")  # Update class name accordingly
-    product_containers = soup.find_all("div", class_="product")
-    
-    for product in product_containers:
-        image_tag = product.find("img")
-        #price_tag = product.find(class_="data-price")  # Update class based on site
-        
-        image_url = image_tag["data-src"] if image_tag and image_tag.get("data-src", "").endswith(".jpg") else "No image found"
-        #price = price_tag["data-price"].text.strip() if price_tag else "No price found"
-        price = product.get("data-price", "No price found")
-        
-       
+    for product in product_elements:
+        try:
+            image_tag = product.find_element(By.TAG_NAME, "img")
+            image_url = image_tag.get_attribute("data-src")
+            if not image_url or not image_url.endswith(".jpg"):
+                image_url = "No image found"
+        except:
+            image_url = "No image found"
+
+        try:
+            price = product.get_attribute("data-price")
+            if not price:
+                price = "No price found"
+        except:
+            price = "No price found"
+
         products.append({"image": image_url, "price": price})
 
+    driver.quit()
     return products
-
-@app.route('/product')
-def product_api():
-    product_data = scrape_products(URL)
-    #print(json.dumps(product_data, indent=4))
-    return jsonify(product_data)
-
-@app.route("/")
-def render_index_page():
-    return render_template('index.html')
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)

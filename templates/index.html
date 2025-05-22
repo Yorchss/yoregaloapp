@@ -1,70 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        .product-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-        }
-        .product {
-            border: 1px solid #ddd;
-            padding: 10px;
-            width: 250px;
-            text-align: center;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-
-
-    </style>
-    <title>Product Scraper</title>
-    
+  <meta charset="UTF-8">
+  <title>Product Scraper</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    /* Grid container with 4 equal columns */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px; /* space between grid items */
+    }
+    /* Each product styling */
+    .product {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      padding: 10px;
+      text-align: center;
+      background-color: #fdfdfd;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .product img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Product List</h1>
-    <div class="product-container" id="productContainer"></div>
+  <h1>Product Scraper</h1>
+  <div id="results" class="grid-container"></div>
 
-    <script>
-         async function fetchProductData() {
-            const response = await fetch('/product');
-            const data = await response.json();
-        //}
-   
+  <script>
+    // Hardcoded URL to scrape
+    const fixedUrl = "https://www.enviaflores.com/florerias-nuevo-leon/monterrey?cs=todo-cumpleanos";
 
-                // Function to display products
-        //function displayProducts() {
-            const container = document.getElementById("productContainer");
+    async function fetchProducts() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p>Loading...</p>';
 
-            data.forEach(product => {
-                const productDiv = document.createElement("div");
-                productDiv.classList.add("product");
+      try {
+        const response = await fetch('/scrape', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: fixedUrl })
+        });
 
-                const img = document.createElement("img");
-                img.src = product.image;
-                img.alt = "Product Image";
+        const products = await response.json();
+        resultsDiv.innerHTML = '';
 
-                const price = document.createElement("p");
-                price.textContent = `Price: $${product.price}`;
+        if (products.length > 0) {
+          products.forEach(product => {
+            const productDiv = document.createElement('div');
+            productDiv.classList.add('product');
 
-                productDiv.appendChild(img);
-                productDiv.appendChild(price);
-                container.appendChild(productDiv);
-            });
+            if (product.image && product.image !== "No image found") {
+              const img = document.createElement('img');
+              img.src = product.image;
+              productDiv.appendChild(img);
+            } else {
+              const noImgText = document.createElement('p');
+              noImgText.textContent = 'No image found';
+              productDiv.appendChild(noImgText);
+            }
+
+            const pricePara = document.createElement('p');
+            pricePara.textContent = 'Price: ' + product.price;
+            productDiv.appendChild(pricePara);
+
+            resultsDiv.appendChild(productDiv);
+          });
+        } else {
+          resultsDiv.innerHTML = '<p>No products found.</p>';
         }
+      } catch (error) {
+        resultsDiv.innerHTML = '<p>Error fetching data.</p>';
+        console.error('Error:', error);
+      }
+    }
 
-        // Load products on page load
-        window.onload = fetchProductData;
-    </script>
+    // Automatically fetch products when the page loads
+    window.addEventListener('DOMContentLoaded', fetchProducts);
+  </script>
 </body>
-
 </html>
