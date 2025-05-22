@@ -8,35 +8,42 @@ app = Flask(__name__, static_folder="static")
 # Target URL
 URL = "https://www.enviaflores.com/florerias-nuevo-leon/monterrey?cs=todas-las-flores"
 
-# Headers to mimic a real browser request
+# Headers
 HEADERS = {
-    "User-Agent": "Mozilla/5.0"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Referer": "https://www.google.com/"
 }
 
-def scrape_products(url):
-    response = requests.get(url, headers=HEADERS)
+print(URL)  # Removed incorrect indentation
+
+def scrape_products(URL):
+    print(URL)
+    response = requests.get(URL, headers=HEADERS)
+    print(response.text[:500])
     
     if response.status_code != 200:
         print("Error fetching the page")
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
+    print(f"Status code: {response.status_code}")
+    print(f"Response length: {len(response.text)}")
 
     products = []
 
     # Modify these selectors based on actual HTML structure
     product_containers = soup.find_all(class_="product-container")  # Update class name accordingly
     product_containers = soup.find_all("div", class_="product")
-    
+
+    print(f"Found {len(product_containers)} product containers")
+
     for product in product_containers:
         image_tag = product.find("img")
-        #price_tag = product.find(class_="data-price")  # Update class based on site
-        
         image_url = image_tag["data-src"] if image_tag and image_tag.get("data-src", "").endswith(".jpg") else "No image found"
-        #price = price_tag["data-price"].text.strip() if price_tag else "No price found"
         price = product.get("data-price", "No price found")
-        
-       
+    
         products.append({"image": image_url, "price": price})
 
     return products
@@ -44,7 +51,6 @@ def scrape_products(url):
 @app.route('/product')
 def product_api():
     product_data = scrape_products(URL)
-    #print(json.dumps(product_data, indent=4))
     return jsonify(product_data)
 
 @app.route("/")
